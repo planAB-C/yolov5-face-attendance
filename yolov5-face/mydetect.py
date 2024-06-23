@@ -152,21 +152,12 @@ def detect(
         model,
         source,
         device,
-        project,
-        name,
-        exist_ok,
-        save_img,
-        view_img
 ):
     # Load model
     img_size = 640
     conf_thres = 0.6
     iou_thres = 0.5
     imgsz = (640, 640)
-
-    # Directories
-    save_dir = increment_path(Path(project) / name, exist_ok=exist_ok)  # increment run
-    Path(save_dir).mkdir(parents=True, exist_ok=True)  # make dir
 
     is_file = Path(source).suffix[1:] in (img_formats + vid_formats)
     is_url = source.lower().startswith(('rtsp://', 'rtmp://', 'http://', 'https://'))
@@ -176,12 +167,9 @@ def detect(
     if webcam:
         print('loading streams:', source)
         dataset = LoadStreams(source, img_size=imgsz)
-        bs = 1  # batch_size
     else:
         print('loading images', source)
         dataset = LoadImages(source, img_size=imgsz)
-        bs = 1  # batch_size
-    vid_path, vid_writer = [None] * bs, [None] * bs
 
     for path, im, im0s, vid_cap in dataset:
 
@@ -225,16 +213,10 @@ def detect(
             else:
                 p, im0, frame = path, im0s.copy(), getattr(dataset, 'frame', 0)
 
-            p = Path(p)  # to Path
-            save_path = str(Path(save_dir) / p.name)  # im.jpg
 
             if len(det):
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_coords(img.shape[2:], det[:, :4], im0.shape).round()
-
-                # Print results
-                for c in det[:, -1].unique():
-                    n = (det[:, -1] == c).sum()  # detections per class
 
                 det[:, 5:15] = scale_coords_landmarks(img.shape[2:], det[:, 5:15], im0.shape).round()
 
@@ -243,7 +225,6 @@ def detect(
                     conf = det[j, 4].cpu().numpy()
                     landmarks = det[j, 5:15].view(-1).tolist()
                     class_num = det[j, 15].cpu().numpy()
-
                     im0 = show_results(im0, xyxy, conf, landmarks, class_num)
 
             cv2.imshow('result', im0)
@@ -254,13 +235,8 @@ def run():
     parser.add_argument('--weights', nargs='+', type=str, default='./weights/yolov5n-0.5.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='0', help='source')  # file/folder, 0 for webcam
     parser.add_argument('--img-size', type=int, default=640, help='inference size (pixels)')
-    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
-    parser.add_argument('--save-img', action='store_true', help='save results')
-    parser.add_argument('--view-img', action='store_true', help='show results')
     opt = parser.parse_args()
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_model(opt.weights, device)
-    detect(model, opt.source, device, opt.project, opt.name, opt.exist_ok, opt.save_img, opt.view_img)
+    detect(model, opt.source, device)
