@@ -1,3 +1,4 @@
+import cv2
 import dlib
 import glob
 import numpy
@@ -20,18 +21,19 @@ facerec = dlib.face_recognition_model_v1(face_rec_model_path)
 candidate = []  # 存放训练集人物名字
 descriptors = []  # 存放训练集人物特征列表
 
-for f in glob.glob(os.path.join(faces_folder_path, "*")):
+for f in glob.glob(os.path.join(faces_folder_path, "*.*")):
     print("正在处理: {}".format(f))
-    img = io.imread(f)
-    candidate.append(f.split('\\')[-1].split('.')[0])
+    img = cv2.imread(f)
     # 人脸检测
-    dets = detector(img, 1)
+    dets = detector(img,1)
     for k, d in enumerate(dets):
         shape = sp(img, d)
         # 提取特征
         face_descriptor = facerec.compute_face_descriptor(img, shape)
-        v = numpy.array(face_descriptor)
-        descriptors.append(v.tolist())
+        v = numpy.array(face_descriptor).tolist()
+        if len(v) > 0:
+            descriptors.append(v)
+            candidate.append(f.split('\\')[-1].split('.')[0])
 
 # path为输出路径和文件名，newline=''是为了不出现空行
 csvFile = open("face_database.csv", "w+", newline='')
@@ -39,7 +41,7 @@ try:
     writer = csv.writer(csvFile)
     # data为list类型
     for i in range(len(candidate)):
-        writer.writerow([candidate[i],descriptors[i]])
+        writer.writerow([candidate[i], descriptors[i]])
 finally:
     csvFile.close()
 

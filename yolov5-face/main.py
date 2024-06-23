@@ -1,0 +1,3 @@
+import mydetect
+
+mydetect.run()

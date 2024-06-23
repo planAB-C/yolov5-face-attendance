@@ -79,7 +79,7 @@ def simface(face_encoding, value):
     facesim.sort(key=lambda k: k[1], reverse=True)
     # print(facesim)
     if len(facesim) > 0 and facesim[0][1] > value:
-        return facesim[0]
+        return facesim[0][0] + " " + str(facesim[0][1])
 
 
 def face(img):
@@ -102,8 +102,8 @@ def face(img):
         v = np.array(face_descriptor)
         face_encoding = v.tolist()
     if len(face_encoding) < 68:
-        return ['None']
-    return simface(face_encoding, 0.8)
+        return 'None'
+    return simface(face_encoding, 0.6)
 
 
 def tk_window(img):
@@ -124,25 +124,27 @@ def show_results(img, xyxy, conf, landmarks, class_num):
     y2 = int(xyxy[3])
     img = img.copy()
 
-    label = 'None'
-    t = threading.Thread(target=tk_window, args=(img,))
-    if time.time() % 5 < 1:
-        t.start()
+    label = ''
+    # t = threading.Thread(target=tk_window, args=(img,))
+    # if time.time() % 5 < 1:
+    #     t.start()
 
-    # cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), thickness=tl, lineType=cv2.LINE_AA)
+    label = str(face(img))
+
+    cv2.rectangle(img, (x1, y1), (x2, y2), (0, 255, 0), thickness=tl, lineType=cv2.LINE_AA)
 
     # 五官点位
     # clors = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255)]
-
+    #
     # for i in range(5):
     #     point_x = int(landmarks[2 * i])
     #     point_y = int(landmarks[2 * i + 1])
     #     cv2.circle(img, (point_x, point_y), tl + 1, clors[i], -1)
 
-    # tf = max(tl - 1, 1)  # font thickness
+    tf = max(tl - 1, 1)  # font thickness
 
-    # cv2.putText(img, label, (x1, y1 - 2), 0, tl / 3, [225, 255, 255], thickness=tf,
-    #             lineType=cv2.LINE_AA)
+    cv2.putText(img, label, (x1, y1 - 2), 0, tl / 3, [225, 255, 255], thickness=tf,
+                lineType=cv2.LINE_AA)
     return img
 
 
@@ -245,34 +247,9 @@ def detect(
                     im0 = show_results(im0, xyxy, conf, landmarks, class_num)
 
             cv2.imshow('result', im0)
-            # if view_img:
-            #     cv2.imshow('result', im0)
-            #     k = cv2.waitKey(1)
-
-            # Save results (image with detections)
-            if save_img:
-                if dataset.mode == 'image':
-                    cv2.imwrite(save_path, im0)
-                else:  # 'video' or 'stream'
-                    if vid_path[i] != save_path:  # new video
-                        vid_path[i] = save_path
-                        if isinstance(vid_writer[i], cv2.VideoWriter):
-                            vid_writer[i].release()  # release previous video writer
-                        if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
-                            w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-                            h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                        else:  # stream
-                            fps, w, h = 30, im0.shape[1], im0.shape[0]
-                        save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
-                        vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
-                    try:
-                        vid_writer[i].write(im0)
-                    except Exception as e:
-                        print(e)
 
 
-if __name__ == '__main__':
+def run():
     parser = argparse.ArgumentParser()
     parser.add_argument('--weights', nargs='+', type=str, default='./weights/yolov5n-0.5.pt', help='model.pt path(s)')
     parser.add_argument('--source', type=str, default='0', help='source')  # file/folder, 0 for webcam
